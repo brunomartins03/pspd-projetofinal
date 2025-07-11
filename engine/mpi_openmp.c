@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <omp.h>
 #define ind2d(i, j) ((i) * (size + 2) + (j))
 
 double wall_time(void) {
@@ -12,18 +13,20 @@ double wall_time(void) {
 }
 
 void generation(int * matrixIn, int * matrixOut, int size) {
-    int i, j, vizviv;
-    for (i = 1; i <= size; i++) {
-        for (j = 1; j <= size; j++) {
-            vizviv =
+    int neighbors_alive;
+
+    #pragma omp parallel for collapse(2) private(neighbors_alive) schedule(static)
+    for (int i = 1; i <= size; i++) {
+        for (int j = 1; j <= size; j++) {
+            neighbors_alive =
                 matrixIn[ind2d(i - 1, j - 1)] + matrixIn[ind2d(i - 1, j)] +
                 matrixIn[ind2d(i - 1, j + 1)] + matrixIn[ind2d(i, j - 1)] +
                 matrixIn[ind2d(i, j + 1)] + matrixIn[ind2d(i + 1, j - 1)] +
                 matrixIn[ind2d(i + 1, j)] + matrixIn[ind2d(i + 1, j + 1)];
 
-            if (matrixIn[ind2d(i, j)] && vizviv < 2) matrixOut[ind2d(i, j)] = 0;
-            else if (matrixIn[ind2d(i, j)] && vizviv > 3) matrixOut[ind2d(i, j)] = 0;
-            else if (!matrixIn[ind2d(i, j)] && vizviv == 3) matrixOut[ind2d(i, j)] = 1;
+            if (matrixIn[ind2d(i, j)] && neighbors_alive < 2) matrixOut[ind2d(i, j)] = 0;
+            else if (matrixIn[ind2d(i, j)] && neighbors_alive > 3) matrixOut[ind2d(i, j)] = 0;
+            else if (!matrixIn[ind2d(i, j)] && neighbors_alive == 3) matrixOut[ind2d(i, j)] = 1;
             else matrixOut[ind2d(i, j)] = matrixIn[ind2d(i, j)];
         }
     }
@@ -46,11 +49,6 @@ void dump_matrix(int * matrix, int size, int first, int last, char * msg) {
 }
 
 void initialize_matrix(int* matrixIn, int* matrixOut, int size) {
-    for (int ij = 0; ij < (size + 2) * (size + 2); ij++) {
-        matrixIn[ij] = 0;
-        matrixOut[ij] = 0;
-    }
-
     matrixIn[ind2d(1, 2)] = 1;
     matrixIn[ind2d(2, 3)] = 1;
     matrixIn[ind2d(3, 1)] = 1;
@@ -61,6 +59,7 @@ void initialize_matrix(int* matrixIn, int* matrixOut, int size) {
 int check_result(int * matrix, int size) {
     int cnt = 0;
 
+    #pragma omp parallel for reduction(+:cnt)
     for (int ij = 0; ij < (size + 2) * (size + 2); ij++) cnt += matrix[ij];
 
     return (cnt == 5 &&
@@ -86,8 +85,8 @@ int main(int argc, char * argv[]) {
         int size = 1 << pow;
 
         t0 = wall_time();
-        matrixIn  = (int*) malloc((size + 2) * (size + 2) * sizeof(int));
-        matrixOut = (int*) malloc((size + 2) * (size + 2) * sizeof(int));
+        matrixIn  = (int*) calloc((size + 2) * (size + 2), sizeof(int));
+        matrixOut = (int*) calloc((size + 2) * (size + 2), sizeof(int));
         initialize_matrix(matrixIn, matrixOut, size);
         t1 = wall_time();
 
@@ -106,6 +105,5 @@ int main(int argc, char * argv[]) {
         free(matrixIn);
         free(matrixOut);
     }
-
     return 0;
 }
