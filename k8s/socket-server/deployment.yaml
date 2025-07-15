@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socket-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: socket-server
+  template:
+    metadata:
+      labels:
+        app: socket-server
+    spec:
+      nodeSelector:
+        role: master
+      containers:
+        - name: socket-server
+          image: SEU_USUARIO/socket-server:latest
+          ports:
+            - containerPort: 3000
+

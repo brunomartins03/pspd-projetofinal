@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engine-mpi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engine-mpi
+  template:
+    metadata:
+      labels:
+        app: engine-mpi
+    spec:
+      nodeSelector:
+        role: worker1
+      containers:
+        - name: engine-mpi
+          image: SEU_USUARIO/engine-mpi:latest
+          ports:
+            - containerPort: 4000
+
