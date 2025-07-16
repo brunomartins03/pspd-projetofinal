@@ -58,6 +58,13 @@ int check(int * matrix, int size) {
             matrix[ind2d(size, size)]);
 }
 
+void run(int * matrixIn, int * matrixOut, int matrix_size) {
+    for (int i = 0; i < 2 * (matrix_size - 3); i++) {
+        run_generation(matrixIn, matrixOut, matrix_size);
+        run_generation(matrixOut, matrixIn, matrix_size);
+    }
+}
+
 int main(int argc, char * argv[]) {
     int * matrixIn, * matrixOut;
     char msg[9];
@@ -78,11 +85,7 @@ int main(int argc, char * argv[]) {
         t0 = wall_time();
         matrix_init(&matrixIn, &matrixOut, matrix_size);
         t1 = wall_time();
-
-        for (int i = 0; i < 2 * (matrix_size - 3); i++) {
-            run_generation(matrixIn, matrixOut, matrix_size);
-            run_generation(matrixOut, matrixIn, matrix_size);
-        }
+        run(matrixIn, matrixOut, matrix_size);
         t2 = wall_time();
         if (check(matrixIn, matrix_size)) printf("**RESULTADO CORRETO**\n");
         else printf("**RESULTADO ERRADO**\n");
