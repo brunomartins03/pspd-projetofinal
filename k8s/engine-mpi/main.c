@@ -4,12 +4,9 @@
 #include <mpi.h>
 #include <omp.h>
 
-#define ind2d(i, j, tam) ((i) * (tam + 2) + (j))
-#define POWMIN 3
-#define POWMAX 10
+#define ind2d(i, j, size) ((i) * (size + 2) + (j))
 
-double wall_time(void)
-{
+double wall_time(void) {
     struct timeval tv;
     struct timezone tz;
 
@@ -17,106 +14,97 @@ double wall_time(void)
     return (tv.tv_sec + tv.tv_usec / 1000000.0);
 }
 
-void UmaVida(int *tabulIn, int *tabulOut, int tam, int loc_lines)
-{
-    int vizviv;
+void one_generation(int * matrixIn, int * matrixOut, int size, int loc_lines) {
+    int neighbors_alive;
 
-    #pragma omp parallel for collapse(2) schedule(static) private(vizviv)
-    for (int i = 1; i <= loc_lines; i++)
-    {
-        for (int j = 1; j <= tam; j++)
-        {
-            vizviv = tabulIn[ind2d(i - 1, j - 1, tam)] + tabulIn[ind2d(i - 1, j, tam)] +
-                     tabulIn[ind2d(i - 1, j + 1, tam)] + tabulIn[ind2d(i, j - 1, tam)] +
-                     tabulIn[ind2d(i, j + 1, tam)] + tabulIn[ind2d(i + 1, j - 1, tam)] +
-                     tabulIn[ind2d(i + 1, j, tam)] + tabulIn[ind2d(i + 1, j + 1, tam)];
+    #pragma omp parallel for collapse(2) schedule(static) private(neighbors_alive)
+    for (int i = 1; i <= loc_lines; i++) {
+        for (int j = 1; j <= size; j++) {
+            neighbors_alive = matrixIn[ind2d(i - 1, j - 1, size)] + matrixIn[ind2d(i - 1, j, size)] +
+                     matrixIn[ind2d(i - 1, j + 1, size)] + matrixIn[ind2d(i, j - 1, size)] +
+                     matrixIn[ind2d(i, j + 1, size)] + matrixIn[ind2d(i + 1, j - 1, size)] +
+                     matrixIn[ind2d(i + 1, j, size)] + matrixIn[ind2d(i + 1, j + 1, size)];
 
-            if (tabulIn[ind2d(i, j, tam)] && vizviv < 2)
-                tabulOut[ind2d(i, j, tam)] = 0;
-            else if (tabulIn[ind2d(i, j, tam)] && vizviv > 3)
-                tabulOut[ind2d(i, j, tam)] = 0;
-            else if (!tabulIn[ind2d(i, j, tam)] && vizviv == 3)
-                tabulOut[ind2d(i, j, tam)] = 1;
-            else
-                tabulOut[ind2d(i, j, tam)] = tabulIn[ind2d(i, j, tam)];
+            if (matrixIn[ind2d(i, j, size)] && neighbors_alive < 2) matrixOut[ind2d(i, j, size)] = 0;
+            else if (matrixIn[ind2d(i, j, size)] && neighbors_alive > 3) matrixOut[ind2d(i, j, size)] = 0;
+            else if (!matrixIn[ind2d(i, j, size)] && neighbors_alive == 3) matrixOut[ind2d(i, j, size)] = 1;
+            else matrixOut[ind2d(i, j, size)] = matrixIn[ind2d(i, j, size)];
         }
     }
 }
 
-void InitTabul(int *tabul, int tam, int loc_lines, int rank)
-{
-    for (int ij = 0; ij < (loc_lines + 2) * (tam + 2); ij++)
-    {
-        tabul[ij] = 0;
-    }
-    if (rank == 0)
-    {
-        tabul[ind2d(1, 2, tam)] = 1;
-        tabul[ind2d(2, 3, tam)] = 1;
-        tabul[ind2d(3, 1, tam)] = 1;
-        tabul[ind2d(3, 2, tam)] = 1;
-        tabul[ind2d(3, 3, tam)] = 1;
+void matrix_init(int ** matrixIn, int ** matrixOut, int size, int loc_lines, int rank) {
+    *matrixIn = (int *) calloc((loc_lines + 2) * (size + 2), sizeof(int));
+    *matrixOut = (int *) calloc((loc_lines + 2) * (size + 2), sizeof(int));
+
+    if (rank == 0) {
+        (*matrixIn)[ind2d(1, 2, size)] = 1;
+        (*matrixIn)[ind2d(2, 3, size)] = 1;
+        (*matrixIn)[ind2d(3, 1, size)] = 1;
+        (*matrixIn)[ind2d(3, 2, size)] = 1;
+        (*matrixIn)[ind2d(3, 3, size)] = 1;
     }
 }
 
-int main(int argc, char *argv[])
-{
-    int pow, tam, nprocs, rank;
+int main(int argc, char *argv[]) {
+    int size, nprocs, rank, powmin, powmax;
+    int * matrixIn, * matrixOut;
     double t0, t1, t2, t3;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    for (pow = POWMIN; pow <= POWMAX; pow++)
-    {
-        tam = 1 << pow;
-        int loc_lines = tam / nprocs;
+    if (argc < 3) {
+        if (rank == 0) {
+            fprintf(stderr, "Uso: %s <powmin> <powmax>\n", argv[0]);
+        }
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+    }
 
-        if (tam % nprocs != 0)
-        {
-            if (rank == 0)
-                printf("Tamanho %d não divisível por %d processos.\n", tam, nprocs);
+    powmin = atoi(argv[1]);
+    powmax = atoi(argv[2]);
+
+    for (int pow = powmin; pow <= powmax; pow++) {
+        size = 1 << pow;
+        int loc_lines = size / nprocs;
+
+        if (size % nprocs != 0) {
+            if (rank == 0) printf("Tamanho %d não divisível por %d processos.\n", size, nprocs);
             MPI_Finalize();
             return 1;
         }
 
-        int *tabulIn = (int *)malloc((loc_lines + 2) * (tam + 2) * sizeof(int));
-        int *tabulOut = (int *)malloc((loc_lines + 2) * (tam + 2) * sizeof(int));
-
         t0 = wall_time();
-        InitTabul(tabulIn, tam, loc_lines, rank);
-
+        matrix_init(&matrixIn, &matrixOut, size, loc_lines, rank);
         t1 = wall_time();
 
-        for (int iter = 0; iter < 2 * (tam - 3); iter++)
-        {
-            // Troca com o vizinho de cima
+        for (int iter = 0; iter < 2 * (size - 3); iter++) {
             if (rank != 0)
-                MPI_Sendrecv(&tabulIn[ind2d(1, 0, tam)], tam + 2, MPI_INT, rank - 1, 0,
-                             &tabulIn[ind2d(0, 0, tam)], tam + 2, MPI_INT, rank - 1, 0,
+                MPI_Sendrecv(&matrixIn[ind2d(1, 0, size)], size + 2, MPI_INT, rank - 1, 0,
+                             &matrixIn[ind2d(0, 0, size)], size + 2, MPI_INT, rank - 1, 0,
                              MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            // Troca com o vizinho de baixo
+
             if (rank != nprocs - 1)
-                MPI_Sendrecv(&tabulIn[ind2d(loc_lines, 0, tam)], tam + 2, MPI_INT, rank + 1, 0,
-                             &tabulIn[ind2d(loc_lines + 1, 0, tam)], tam + 2, MPI_INT, rank + 1, 0,
+                MPI_Sendrecv(&matrixIn[ind2d(loc_lines, 0, size)], size + 2, MPI_INT, rank + 1, 0,
+                             &matrixIn[ind2d(loc_lines + 1, 0, size)], size + 2, MPI_INT, rank + 1, 0,
                              MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-            UmaVida(tabulIn, tabulOut, tam, loc_lines);
+            one_generation(matrixIn, matrixOut, size, loc_lines);
 
-            // Troca ponteiros
-            int *tmp = tabulIn;
-            tabulIn = tabulOut;
-            tabulOut = tmp;
+            int * tmp = matrixIn;
+            matrixIn = matrixOut;
+            matrixOut = tmp;
         }
 
         t2 = wall_time();
 
         if (rank == 0)
-            printf("tam=%d; tempos: init=%.7f, comp=%.7f, total=%.7f\n", tam, t1 - t0, t2 - t1, t2 - t0);
+            printf("tam=%d; tempos: init=%.7f, comp=%.7f, total=%.7f\n", size, t1 - t0, t2 - t1, t2 - t0);
 
-        free(tabulIn);
-        free(tabulOut);
+        free(matrixIn);
+        free(matrixOut);
     }
 
     MPI_Finalize();
