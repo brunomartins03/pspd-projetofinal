@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kibana-import-job
+spec:
+  template:
+    spec:
+      containers:
+        - name: kibana-import
+          image: curlimages/curl:8.6.0
+          command:
+            - sh
+            - -c
+            - |
+              echo "Aguardando Kibana..."
+              until curl -s http://kibana:5601/api/status; do sleep 5; done
+              echo "Importando dashboard..."
+              curl -X POST "http://kibana:5601/api/saved_objects/_import?overwrite=true" \
+                -H 'kbn-xsrf: true' \
+                --form file=@/dashboard.ndjson
+          volumeMounts:
+            - name: dashboard
+              mountPath: /dashboard.ndjson
+              subPath: dashboard.ndjson
+      volumes:
+        - name: dashboard
+          configMap:
+            name: kibana-dashboard
+      restartPolicy: OnFailure
