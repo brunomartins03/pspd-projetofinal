@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: engine-spark
+  name: engine-mpi
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: engine-spark
+      app: engine-mpi
   template:
     metadata:
       labels:
-        app: engine-spark
+        app: engine-mpi
     spec:
       nodeSelector:
         role: worker1
       containers:
-        - name: engine-spark
-          image: SEU_USUARIO/engine-spark:latest
+        - name: engine-mpi
+          image: brunmartins/engine-mpi:latest
           ports:
-            - containerPort: 5000
+            - containerPort: 4000
 
