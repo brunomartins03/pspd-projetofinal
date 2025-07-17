@@ -16,7 +16,7 @@ spec:
         role: worker1
       containers:
         - name: engine-spark
-          image: SEU_USUARIO/engine-spark:latest
+          image: gabrielmarques002/engine-spark:latest
           ports:
             - containerPort: 5000
 
