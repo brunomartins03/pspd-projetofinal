@@ -16,7 +16,7 @@ spec:
         role: worker2
       containers:
         - name: elasticsearch
-          image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
           ports:
             - containerPort: 9200
           resources:
@@ -29,6 +29,42 @@ spec:
           env:
             - name: discovery.type
               value: single-node
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    (
+                      echo "Aguardando Elasticsearch..."
+                      until curl -s http://localhost:9200 >/dev/null; do sleep 5; done
+                      echo "Recriando índice game-of-life-requests..."
+                      curl -X DELETE "http://localhost:9200/game-of-life-requests"
+                      curl -X PUT "http://localhost:9200/game-of-life-requests" \
+                        -H 'Content-Type: application/json' \
+                        -d '{
+                          "mappings": {
+                            "properties": {
+                              "request_id": {"type": "keyword"},
+                              "client_id": {"type": "keyword"},
+                              "engine": {"type": "keyword"},
+                              "powmin": {"type": "integer"},
+                              "powmax": {"type": "integer"},
+                              "start_time": {"type": "date"},
+                              "end_time": {"type": "date"},
+                              "duration_ms": {"type": "float"},
+                              "status": {"type": "keyword"},
+                              "error_message": {"type": "text"},
+                              "num_generations": {"type": "integer"},
+                              "board_size": {"type": "integer"},
+                              "num_clients_active": {"type": "integer"},
+                              "host_node": {"type": "keyword"},
+                              "timestamp": {"type": "date"}
+                            }
+                          }
+                        }'
+                    ) &
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -48,8 +84,28 @@ spec:
         role: worker2
       containers:
         - name: kibana
-          image: docker.elastic.co/kibana/kibana:7.17.0
+          image: docker.elastic.co/kibana/kibana:8.16.1
           ports:
             - containerPort: 5601
-
-
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    (
+                      echo "Aguardando Kibana..."
+                      until curl -s http://localhost:5601/api/status >/dev/null; do sleep 5; done
+                      echo "Importando objetos..."
+                      curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" \
+                        -H 'kbn-xsrf: true' \
+                        --form file=@/import/kibana-objects.ndjson
+                    ) &
+          volumeMounts:
+            - name: kibana-objects
+              mountPath: /import
+      volumes:
+        - name: kibana-objects
+          configMap:
+            name: kibana-objects

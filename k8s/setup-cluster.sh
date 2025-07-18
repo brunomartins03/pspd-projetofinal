@@ -15,9 +15,9 @@ minikube -p $CLUSTER_NAME kubectl -- label node ${nodes[2]} role=worker2 --overw
 minikube -p $CLUSTER_NAME kubectl -- apply -f socket-server/
 minikube -p $CLUSTER_NAME kubectl -- apply -f engine-mpi/
 minikube -p $CLUSTER_NAME kubectl -- apply -f engine-spark/
-minikube -p $CLUSTER_NAME kubectl -- create configmap kibana-dashboard --from-file=dashboard.ndjson=elk/dashboard.ndjson --dry-run=client -o yaml | minikube -p $CLUSTER_NAME kubectl apply -f -
+minikube -p $CLUSTER_NAME kubectl -- apply -f elk/kibana-configmap.yaml
+# minikube -p $CLUSTER_NAME kubectl -- create configmap kibana-objects --from-file=kibana-objects.ndjson=elk/kibana-objects.ndjson --dry-run=client -o yaml | minikube -p $CLUSTER_NAME kubectl -- apply -f
 minikube -p $CLUSTER_NAME kubectl -- apply -f elk/
-minikube -p $CLUSTER_NAME kubectl -- apply -f elk/jobs/
 
 minikube -p $CLUSTER_NAME kubectl -- get pods -o wide
 
