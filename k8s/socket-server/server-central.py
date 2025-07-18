@@ -6,7 +6,7 @@ import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from elasticsearch import Elasticsearch
+import requests
 
 # === CONFIGS ===
 # MPI_ENGINE_HOST = "0.0.0.0"
@@ -22,7 +22,6 @@ logging.basicConfig(level=logging.INFO)
 
 # === Init Elasticsearch ===
 ES_HOST = "http://elasticsearch:9200"
-es = Elasticsearch([ES_HOST])
 
 # === Thread Pool ===
 executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
@@ -56,11 +55,14 @@ def send_to_engine(powmin, powmax, engine, request_id):
 
 
 def log_to_elasticsearch(log_doc):
+    url = f"{ES_HOST}/game-of-life-requests/_doc"
+    headers = {"Content-Type": "application/json"}
     try:
-        es.index(index="game-of-life-requests", document=log_doc)
-        logging.info(f"[Central-ES] Log enviado: {log_doc}")
-    except Exception as e:
-        logging.error(f"[Central-ES] Erro ao enviar log: {e}")
+        response = requests.post(url, headers=headers, data=json.dumps(log_doc), timeout=10)
+        response.raise_for_status()
+        logging.info("[Central-ES] Log enviado: %s", log_doc)
+    except requests.RequestException as e:
+        logging.error("[Central-ES] Erro ao enviar log: %s", e)
 
 def extract_result(result):
     if not result:

@@ -16,7 +16,7 @@ spec:
         role: master
       containers:
         - name: socket-server
-          image: arthurgrandao/socket-server:latest
+          image: dougalvs/socket-server:latest
           ports:
             - containerPort: 3000
           imagePullPolicy: Always
