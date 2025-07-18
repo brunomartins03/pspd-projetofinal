@@ -133,7 +133,7 @@ def handle_client(conn, addr):
             log_doc = {
                 "request_id": request_id,
                 "client_id": client_id,
-                "engine": "engine-service",
+                "engine": "Spark" if engine == "spark" else "MPI e OpenMP",
                 "powmin": powmin,
                 "powmax": powmax,
                 "start_time": start_time.isoformat(),
