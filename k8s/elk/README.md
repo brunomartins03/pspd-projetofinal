@@ -31,7 +31,7 @@ kubectl exec -it nome_pod_elastic_search -- bin/elasticsearch-reset-password -u 
 Para criar o índice no Elasticsearch, você pode usar o seguinte comando:
 
 ```bash
-curl -X PUT "http://localhost:9200/game-of-life-requests" \
+kubectl exec -it nome_pod_elastic_search -- curl -X PUT "http://localhost:9200/game-of-life-requests" \
                         -H 'Content-Type: application/json' \
                         -d '{
                           "mappings": {
