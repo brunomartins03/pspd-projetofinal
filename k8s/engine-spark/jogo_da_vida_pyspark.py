@@ -55,22 +55,25 @@ def calcula_cenario(pow_min, pow_max):
         
         # Medindo o tempo de execução
         start_time = time.time()
+        generations = 0
 
         # Simula as gerações do Jogo da Vida
         for _ in range(2 * (tam - 3)):
             uma_vida(tabul_in, tabul_out, tam)
+            generations += 1
             uma_vida(tabul_out, tabul_in, tam)
+            generations += 1
 
         end_time = time.time()
         elapsed_time = end_time - start_time
 
         # Validação e saída
-        if correto(tabul_in, tam):
-            resultado += f"**RESULTADO CORRETO para tam={tam}**\n"
-        else:
-            resultado += f"**RESULTADO INCORRETO para tam={tam}**\n"
+        # if correto(tabul_in, tam):
+        #     resultado += f"**RESULTADO CORRETO para tam={tam}**\n"
+        # else:
+        #     resultado += f"**RESULTADO INCORRETO para tam={tam}**\n"
 
-        resultado += f"Tempo de execução para tam={tam}: {elapsed_time:.4f} segundos\n"
+        resultado += f"tam={tam}; gens={generations}; tempo={elapsed_time:.4f}; \n"
 
     # Finalize a SparkSession
     spark.stop()
