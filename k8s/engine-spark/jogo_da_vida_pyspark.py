@@ -23,6 +23,8 @@ def uma_vida(tabul_in, tabul_out, tam):
             tabul_out[i][j] = vizinhos_vivos(tabul_in[i][j], vizinhos)
 
 def calcula_cenario(pow_min, pow_max):
+    resultado = ""
+
     # Inicialize a SparkSession
     spark = SparkSession.builder.appName("JogoDaVidaPySpark").getOrCreate()
 
@@ -64,15 +66,16 @@ def calcula_cenario(pow_min, pow_max):
 
         # Validação e saída
         if correto(tabul_in, tam):
-            print(f"**RESULTADO CORRETO para tam={tam}**")
+            resultado += f"**RESULTADO CORRETO para tam={tam}**\n"
         else:
-            print(f"**RESULTADO INCORRETO para tam={tam}**")
-        
-        print(f"Tempo de execução para tam={tam}: {elapsed_time:.4f} segundos")
+            resultado += f"**RESULTADO INCORRETO para tam={tam}**\n"
+
+        resultado += f"Tempo de execução para tam={tam}: {elapsed_time:.4f} segundos\n"
 
     # Finalize a SparkSession
     spark.stop()
+    return resultado
 
 def main(pow_min, pow_max):
     print(f"Recebendo valores POWMIN={pow_min} e POWMAX={pow_max}")
-    calcula_cenario(pow_min, pow_max)
+    return calcula_cenario(pow_min, pow_max)
