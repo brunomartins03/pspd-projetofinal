@@ -23,6 +23,8 @@ def uma_vida(tabul_in, tabul_out, tam):
             tabul_out[i][j] = vizinhos_vivos(tabul_in[i][j], vizinhos)
 
 def calcula_cenario(pow_min, pow_max):
+    resultado = ""
+
     # Inicialize a SparkSession
     spark = SparkSession.builder.appName("JogoDaVidaPySpark").getOrCreate()
 
@@ -53,26 +55,30 @@ def calcula_cenario(pow_min, pow_max):
         
         # Medindo o tempo de execução
         start_time = time.time()
+        generations = 0
 
         # Simula as gerações do Jogo da Vida
         for _ in range(2 * (tam - 3)):
             uma_vida(tabul_in, tabul_out, tam)
+            generations += 1
             uma_vida(tabul_out, tabul_in, tam)
+            generations += 1
 
         end_time = time.time()
         elapsed_time = end_time - start_time
 
         # Validação e saída
-        if correto(tabul_in, tam):
-            print(f"**RESULTADO CORRETO para tam={tam}**")
-        else:
-            print(f"**RESULTADO INCORRETO para tam={tam}**")
-        
-        print(f"Tempo de execução para tam={tam}: {elapsed_time:.4f} segundos")
+        # if correto(tabul_in, tam):
+        #     resultado += f"**RESULTADO CORRETO para tam={tam}**\n"
+        # else:
+        #     resultado += f"**RESULTADO INCORRETO para tam={tam}**\n"
+
+        resultado += f"tam={tam}; gens={generations}; tempo={elapsed_time:.4f}; \n"
 
     # Finalize a SparkSession
     spark.stop()
+    return resultado
 
 def main(pow_min, pow_max):
     print(f"Recebendo valores POWMIN={pow_min} e POWMAX={pow_max}")
-    calcula_cenario(pow_min, pow_max)
+    return calcula_cenario(pow_min, pow_max)

@@ -100,8 +100,10 @@ int main(int argc, char *argv[]) {
 
         t2 = wall_time();
 
+        int generations = 2 * (size - 3);
+
         if (rank == 0)
-            printf("tam=%d; tempos: init=%.7f, comp=%.7f, total=%.7f\n", size, t1 - t0, t2 - t1, t2 - t0);
+            printf("tam=%d; gens=%d; tempo=%.7f;\n", size, generations, t2 - t0);
 
         free(matrixIn);
         free(matrixOut);

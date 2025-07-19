@@ -16,7 +16,8 @@ spec:
         role: worker1
       containers:
         - name: engine-spark
-          image: gabrielmarques002/engine-spark:latest
+          image: arthurgrandao/engine-spark:latest
           ports:
-            - containerPort: 5000
+            - containerPort: 5001
+          imagePullPolicy: Always
 
